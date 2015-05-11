@@ -6,11 +6,7 @@ export PATH=$PATH:/usr/local/bin/:/usr/bin
 # Github Repo: https://github.com/CaseyLabs/aws-ec2-ebs-snapshot-check-bash
 
 # Safety feature: exit script if error is returned, or if variables not set. Exit if a pipeline results in an error.
-set -u -o pipefail
-
-### User configurable options,
-# Set Logging Options (0-5, 1 debug, 5 verbose)
-declare -i LOG_LEVEL=1
+#set -u -o pipefail
 
 ## Global Variable Declarations ##
 
@@ -32,6 +28,7 @@ declare REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/avail
 
 
 ## Function Declarations ##
+
 DoLog () {
   local fail_flag=${2:-0}
   local log_tag="[PID:$$]-[${0%.*/.\/}]"
@@ -46,15 +43,17 @@ DoLog () {
   fi
 }
 
-
 # Confirm that the AWS CLI and related tools are installed.
 DepCheck() {
-  for prerequisite in ${BINARIES}; do
-    hash ${BINARIES[@]} &> /dev/null
+  local -i fail=0
+  for prerequisite in ${BINARIES[@]}; do
+    hash ${prerequisite} &> /dev/null
     if [[ $? == 1 ]]; then
-      echo "In order to use this script, the executable \"$prerequisite\" must be installed." 1>&2; exit 70
+      DoLog "Missing executable: \"${prerequisite}\" must be installed."
+      ((fail++))
     fi
   done
+  (( fail == 0 )) || return 70
 }
 
 # Clean up temp files upon exiting the script.
