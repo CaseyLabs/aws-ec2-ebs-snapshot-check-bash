@@ -1,67 +1,9 @@
 #!/bin/bash
 export PATH=$PATH:/usr/local/bin/:/usr/bin
 
-### Put this in a separate file ie README vv
-
 ## AWS Missing Snapshot Verification Script
-#
 # Written by Casey Labs Inc. and Bleeding Edge Solutions
-#
-# PURPOSE:
-# - Gather a list of all EBS volumes attached to running EC2 instances.
-# - Check the snapshots times associated with the EBS volumes.
-# - If there are no recent snapshots, send out an alert notification.
-
-## Requirements ##
-
-# 1) IAM USER:
-#
-# This script requires an IAM policy attached to an IAM User or an IAM Role.
-# IAM permissions required:
-#
-# {
-#    "Version": "2012-10-17",
-#    "Statement": [
-#        {
-#            "Sid": "Stmt1426256275000",
-#            "Effect": "Allow",
-#            "Action": [
-#                "ec2:DescribeInstances",
-#                "ec2:DescribeSnapshots",
-#                "ec2:DescribeVolumes"
-#            ],
-#            "Resource": [
-#                "*"
-#            ]
-#        }
-#    ]
-# }
-
-# 2) AWS CLI: 
-#
-# This script requires the AWS CLI tools to be installed, available at: https://aws.amazon.com/cli/
-#
-# Linux install instructions for AWS CLI:
-#
-# - Install Python pip (e.g. yum install python-pip or apt-get install python-pip)
-# - Then run: pip install awscli
-#
-# Configure AWS CLI by running this command (can be skipped if using an IAM Role): 
-#		sudo aws configure
-#
-# Access Key & Secret Access Key: enter in your IAM user crendentials
-# Region Name: the region that this instance is currently in (e.g. us-east-1, us-west-1, etc)
-# Output Format: enter "text"
-
-# 3) SCRIPT INSTALLATION:
-#
-# Copy this script to /opt/aws/check-snapshots.sh
-# And make it exectuable: chmod +x /opt/aws/check-snapshots.sh
-#
-# Then setup a crontab job for nightly backups:
-# 
-# 00 07 * * *     root    AWS_CONFIG_FILE="/root/.aws/config" /opt/aws/check-snapshot.sh
-
+# Github Repo: https://github.com/CaseyLabs/aws-ec2-ebs-snapshot-check-bash
 
 # Safety feature: exit script if error is returned, or if variables not set. Exit if a pipeline results in an error.
 set -u -o pipefail
