@@ -14,12 +14,6 @@ declare -i LOG_LEVEL=1
 
 ## Global Variable Declarations ##
 
-declare -r LOGGER='/usr/bin/logger'
-declare -r ECHO='/bin/echo'
-declare -r DATE='/bin/date'
-declare -r AWS='/usr/bin/aws'
-declare -r CURL='/usr/bin/curl'
-
 # This script requires the following dependencies:
 declare -r BINARIES=(logger echo date aws curl)
 
@@ -63,8 +57,8 @@ DoLog () {
 
 # Confirm that the AWS CLI and related tools are installed.
 DepCheck() {
-	for prerequisite in {$BINARIES}; do
-		hash {$BINARIES} &> /dev/null
+	for prerequisite in ${BINARIES}; do
+		hash ${BINARIES} &> /dev/null
 		if [[ $? == 1 ]]; then
 			echo "In order to use this script, the executable \"$prerequisite\" must be installed." 1>&2; exit 70
 		fi
