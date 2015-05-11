@@ -50,7 +50,7 @@ DoLog () {
 # Confirm that the AWS CLI and related tools are installed.
 DepCheck() {
   for prerequisite in ${BINARIES}; do
-    hash ${BINARIES} &> /dev/null
+    hash ${BINARIES[@]} &> /dev/null
     if [[ $? == 1 ]]; then
       echo "In order to use this script, the executable \"$prerequisite\" must be installed." 1>&2; exit 70
     fi
