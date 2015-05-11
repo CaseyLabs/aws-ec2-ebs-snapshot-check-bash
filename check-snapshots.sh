@@ -17,10 +17,8 @@ declare -i LOG_LEVEL=1
 # This script requires the following dependencies:
 declare -r BINARIES=(logger echo date aws curl)
 
-declare PLACEMARK='lost'
-
 # Volumes must have a snapshot that is under $DAYS_MIN days old
-declare -ri DAYS_MIN=3  
+declare -ri DAYS_MIN=3
 
 # $DAY_MIN converted into seconds
 declare -ri DAYS_MIN_SEC=$(date +%s --date "${DAYS_MIN} days ago")  
@@ -36,22 +34,16 @@ declare REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/avail
 ## Function Declarations ##
 DoLog () {
   local fail_flag=${2:-0}
-        if (( ${LOG_LEVEL} > 0 ))
-        then
-                #If debugging add some extra tags
-                local log_tag="[PID:$$]-[${0%.*/.\/}]-[${PLACEMARK}]"
-        else
-                local log_tag="[PID:$$]-[${0%.*/.\/}]"
-        fi
-        if (( ${fail_flag} == 1 ))
-        then
-                #If fail flag raised print error to STDERR and daemon.err facility
-                logger  -p daemon.err -s -t "${log_tag}" "$1"
-        else
-                #Log all else as informational
-                echo "[$(date +%r)] ${log_tag}: $1"
-                logger  -p daemon.info -t "${log_tag}" "$1"
-        fi
+  local log_tag="[PID:$$]-[${0%.*/.\/}]"
+  
+  if (( ${fail_flag} == 1 )); then
+    #If fail flag raised print error to STDERR and daemon.err facility
+    logger  -p daemon.err -s -t "${log_tag}" "$1"
+  else
+    #Log all else as informational
+    echo "[$(date +%r)] ${log_tag}: $1"
+    logger  -p daemon.info -t "${log_tag}" "$1"
+  fi
 }
 
 
@@ -67,7 +59,7 @@ DepCheck() {
 
 # Clean up temp files upon exiting the script.
 CleanUp() {
-  (( ${LOG_LEVEL} > 0 )) && echo -e "\nScript cleanup."
+  echo -e "\nScript cleanup."
   #Reset Bash variables
   set +u +o pipefail
 }
