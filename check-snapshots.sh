@@ -20,7 +20,8 @@ declare -r DATE='/bin/date'
 declare -r AWS='/usr/bin/aws'
 declare -r CURL='/usr/bin/curl'
 
-declare -r BINARIES=( ${LOGGER} ${ECHO} ${DATE} ${AWS} ${CURL} )
+# This script requires the following dependencies:
+declare -r BINARIES=(logger echo date aws curl)
 
 declare PLACEMARK='lost'
 
@@ -28,14 +29,14 @@ declare PLACEMARK='lost'
 declare -ri DAYS_MIN=3	
 
 # $DAY_MIN converted into seconds
-declare -ri DAYS_MIN_SEC=$(${DATE} +%s --date "${DAYS_MIN} days ago")	
+declare -ri DAYS_MIN_SEC=$(date +%s --date "${DAYS_MIN} days ago")	
 
 # Get list of running instances
-declare INSTANCES=$(${AWS} ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId]' --filters "Name=instance-state-name,Values=running" --output text)
-declare INSTANCES_NUM=$(${AWS} ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId]' --filters "Name=instance-state-name,Values=running" --output text | wc -l)
+declare INSTANCES=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId]' --filters "Name=instance-state-name,Values=running" --output text)
+declare INSTANCES_NUM=$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].[InstanceId]' --filters "Name=instance-state-name,Values=running" --output text | wc -l)
 
 # Grab current AWS region
-declare REGION=$(${CURL} -s http://169.254.169.254/latest/meta-data/placement/availability-zone|sed s'/.$//')
+declare REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone|sed s'/.$//')
 
 
 ## Function Declarations ##
@@ -51,24 +52,22 @@ DoLog () {
         if (( ${fail_flag} == 1 ))
         then
                 #If fail flag raised print error to STDERR and daemon.err facility
-                ${LOGGER}  -p daemon.err -s -t "${log_tag}" "$1"
+                logger  -p daemon.err -s -t "${log_tag}" "$1"
         else
                 #Log all else as informational
-                ${ECHO} "[$(${DATE} +%r)] ${log_tag}: $1"
-                ${LOGGER}  -p daemon.info -t "${log_tag}" "$1"
+                echo "[$(date +%r)] ${log_tag}: $1"
+                logger  -p daemon.info -t "${log_tag}" "$1"
         fi
 }
 
 
 # Confirm that the AWS CLI and related tools are installed.
 DepCheck() {
-	PLACEMARK=${FUNCNAME[0]}
-	for bin in ${BINARIES}
-	do
-		#Check if file exists
-		[[ -f ${bin} ]] || DoLog "Binary ${bin} does not exist" 1
-		#Check if file executable
-		[[ -x ${bin} ]] || DoLog "Binary ${bin} is not executable" 1
+	for prerequisite in {$BINARIES}; do
+		hash {$BINARIES} &> /dev/null
+		if [[ $? == 1 ]]; then
+			echo "In order to use this script, the executable \"$prerequisite\" must be installed." 1>&2; exit 70
+		fi
 	done
 }
 
@@ -115,28 +114,28 @@ DoLog "There are ${INSTANCES_NUM} instances running."
 
 for instance in ${INSTANCES}
 do
-	description=$(${AWS} ec2 describe-instances --region ${REGION} --instance-id ${instance} --query 'Reservations[*].Instances[*].Tags[?Key==`Name`].Value[]')
+	description=$(aws ec2 describe-instances --region ${REGION} --instance-id ${instance} --query 'Reservations[*].Instances[*].Tags[?Key==`Name`].Value[]')
 	
 	DoLog "Checking ${instance}: (${description})"
 
     # Check launch date of instance
-	launch_time=$(${AWS} ec2 describe-instances --region ${REGION} --instance-ids ${instance} --query 'Reservations[*].Instances[*].[LaunchTime]' --output text | sed 's/T.*$//')
-	launch_time_sec=$(${DATE} "--date=${launch_time}" +%s)
+	launch_time=$(aws ec2 describe-instances --region ${REGION} --instance-ids ${instance} --query 'Reservations[*].Instances[*].[LaunchTime]' --output text | sed 's/T.*$//')
+	launch_time_sec=$(date "--date=${launch_time}" +%s)
 
 	# Proceed if the instance launch date is greater than 3 days, otherwise exit. Why? Because we don't want alerts for recently launched instances.
 	[[ ${launch_time_sec} > ${DAYS_MIN_SEC} ]] && DoLog "${instance} (${description}) was launched less than $DAYS_MIN days ago, not alerting." && continue
 	
 	# Grab all volume IDs attached to this particular instance
-	volume_list=$(${AWS} ec2 describe-volumes --region ${REGION} --filters Name=attachment.instance-id,Values=${instance} --query Volumes[].VolumeId --output text)
+	volume_list=$(aws ec2 describe-volumes --region ${REGION} --filters Name=attachment.instance-id,Values=${instance} --query Volumes[].VolumeId --output text)
 			   
 	for volume in ${volume_list}; do
 		# Grab all snapshot associated with this particular volume, and find the most recent snapshot time
-		last_snap=$(${AWS} ec2 describe-snapshots --region ${REGION} --output=text --filters "Name=volume-id,Values=${volume}" --query Snapshots[].[StartTime] | sed 's/T.*$//' | sort -u | tail -n1)
+		last_snap=$(aws ec2 describe-snapshots --region ${REGION} --output=text --filters "Name=volume-id,Values=${volume}" --query Snapshots[].[StartTime] | sed 's/T.*$//' | sort -u | tail -n1)
 
 		if [[ -z ${last_snap} ]]; then
 			DoAlert
 		else
-			last_snap_sec=$(${DATE} "--date=${last_snap}" +%s)
+			last_snap_sec=$(date "--date=${last_snap}" +%s)
 		
 			# If the latest snapshot is older than $DAYS_MIN, send an alert.
 			if [[ ${last_snap_sec} < ${DAYS_MIN_SEC} ]]; then 
