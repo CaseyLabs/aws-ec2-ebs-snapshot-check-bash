@@ -41,7 +41,7 @@ declare REGION=$(${CURL} -s http://169.254.169.254/latest/meta-data/placement/av
 ## Function Declarations ##
 DoLog () {
 	local fail_flag=${2:-0}
-        if (( ${DEBUG} > 0 ))
+        if (( ${LOG_LEVEL} > 0 ))
         then
                 #If debugging add some extra tags
                 local log_tag="[PID:$$]-[${0%.*/.\/}]-[${PLACEMARK}]"
@@ -74,7 +74,7 @@ DepCheck() {
 
 # Clean up temp files upon exiting the script.
 CleanUp() {
-	(( ${DEBUG} > 0 )) && echo -e "\nClean the things"
+	(( ${LOG_LEVEL} > 0 )) && echo -e "\nClean the things"
 	#Reset Bash variables
 	set +u +o pipefail
 }
