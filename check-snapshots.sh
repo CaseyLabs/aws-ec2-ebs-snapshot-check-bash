@@ -67,7 +67,7 @@ DepCheck() {
 
 # Clean up temp files upon exiting the script.
 CleanUp() {
-  (( ${LOG_LEVEL} > 0 )) && echo -e "\nClean the things"
+  (( ${LOG_LEVEL} > 0 )) && echo -e "\nScript cleanup."
   #Reset Bash variables
   set +u +o pipefail
 }
@@ -100,14 +100,11 @@ trap "CleanUp" EXIT
 
 ## Script Commands ##
 
-
-DepCheck || Terminate "Dependency checks failed" 1
-
+DepCheck || Terminate "Dependency checks failed." 1
 
 DoLog "There are ${INSTANCES_NUM} instances running."
 
-for instance in ${INSTANCES}
-do
+for instance in ${INSTANCES}; do
   description=$(aws ec2 describe-instances --region ${REGION} --instance-id ${instance} --query 'Reservations[*].Instances[*].Tags[?Key==`Name`].Value[]')
   
   DoLog "Checking ${instance}: (${description})"
