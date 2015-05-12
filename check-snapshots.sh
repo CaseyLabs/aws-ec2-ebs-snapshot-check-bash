@@ -6,7 +6,7 @@ export PATH=$PATH:/usr/local/bin/:/usr/bin
 # Github Repo: https://github.com/CaseyLabs/aws-ec2-ebs-snapshot-check-bash
 
 # Safety feature: exit script if error is returned, or if variables not set. Exit if a pipeline results in an error.
-#set -u -o pipefail
+set -u -o pipefail
 
 ## Global Variable Declarations ##
 
